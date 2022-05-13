@@ -1,0 +1,71 @@
+<launch>
+
+    <arg name="record_cameras" default="true" />
+    <node name="img_throttler" type="throttle" pkg="topic_tools" args="messages /head_camera/rgb/image_raw 5 /head_camera/rgb/image_raw_throttle" />
+    <node name="pc_throttler" type="throttle" pkg="topic_tools" args="messages /head_camera/depth/points 5 /head_camera/depth/points_throttle" />
+
+    <node pkg="rosbag" type="record" name="rosbag_record_cam" 
+    args="record -o /media/fetch/FetchSSD1/ subset_topics
+
+/head_camera/rgb/image_raw_throttle
+/head_camera/depth/points_throttle
+/base_controller/command
+/base_scan
+/base_scan_no_self_filter
+/base_scan_raw
+/base_scan_tagged
+/battery_state
+/charge_lockout/cancel
+/charge_lockout/feedback
+/charge_lockout/goal
+/charge_lockout/result
+/charge_lockout/status
+/cmd_vel
+/cmd_vel_mux/selected
+/diagnostics
+/diagnostics_agg
+/diagnostics_toplevel_state
+/dock/result
+/enable_software_runstop
+/imu
+/imu1/gyro_offset
+/imu1/imu
+/imu1/imu_raw
+/imu2/gyro_offset
+/imu2/imu
+/imu2/imu_raw
+/joint_states
+/joy
+/laser_self_filter/cancel
+/laser_self_filter/feedback
+/laser_self_filter/goal
+/laser_self_filter/result
+/laser_self_filter/status
+/odom
+/odom_combined
+/query_controller_states/cancel
+/query_controller_states/feedback
+/query_controller_states/goal
+/query_controller_states/result
+/query_controller_states/status
+/robot_state
+/rosout
+/rosout_agg
+/sick_tim551_2050001/parameter_descriptions
+/sick_tim551_2050001/parameter_updates
+/software_runstop_enabled
+/teleop/cmd_vel
+/tf
+/tf_static
+/curr_goal_shape
+/filtered_shapes
+/unreachable_shapes
+/move_base_node/NavfnROS/plan
+/move_base_node/global_costmap/costmap
+/move_base_node/local_costmap/costmap
+/map
+    "
+    />
+
+
+</launch>
