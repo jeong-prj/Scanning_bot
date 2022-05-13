@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>former_control</name>
+  <version>0.2.3</version>
+  <description>
+    The package to control Former
+  </description>
+  <maintainer email="shlee@roas.co.kr">Brighten Lee</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>ros_controllers</depend>
+  <depend>twist_mux</depend>
+  <depend>robot_localization</depend>
+</package>
