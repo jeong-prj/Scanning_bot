@@ -1,0 +1,43 @@
+#This file contains common configuration options for the two costmaps used in the navigation stack for more details on the parameters in this file, and a full list of the parameters used by the costmaps, please see http://www.ros.org/wiki/costmap_2d
+
+#For this example we'll configure the costmap in voxel-grid mode
+#map_type: costmap 
+
+robot_base_frame: base_link
+
+#Set the tolerance we're willing to have for tf transforms
+transform_tolerance: 0.5
+
+#footprint: [[-0.127, -0.127], [-0.18, 0.0], [-0.127, 0.127], [0.0, 0.18], [0.127, 0.127], [0.18, 0.0], [0.127, -0.127], [0.0, -0.18]]
+#add this line for robot size
+footprint: [[-0.202, -0.202], [-0.202, 0.202], [0.202, 0.202], [0.202, -0.202]] 
+footprint_padding: 0 #0.03
+
+#Cost function parameters
+#inflater:
+#robot_radius: 0.3 #0.18
+inflation_radius: 0.55 #0.7
+cost_scaling_factor: 1.0 #1.0 # steepness of inflation decay func
+
+#The cost at which a cell is considered an obstacle when a map is read from the map_server
+lethal_cost_threshold: 253
+
+#Configuration for the sensors that the costmap will use to update a map
+obstacles:
+    observation_sources: base_scan
+    base_scan:
+        data_type: LaserScan
+        topic: scan # base_scan - former
+        marking: true
+        clearing: true
+        obstacle_range: 8.0
+        raytrace_range: 10.0
+        min_obstacle_height: 0.25
+        max_obstacle_height: 0.3
+    z_voxels: 16
+    z_resolution: 0.125
+    max_obstacle_height: 2.0
+
+#depth_camera_sensor: {sensor_frame: left_cam, data_type: PointCloud2, topic: /gt_point_cloud_xyz, marking: true, clearing: true, max_obstacle_height: 1.0, min_obstacle_height: 0.5}
+
+

@@ -1,0 +1,16 @@
+<!--gmapping launcher-->
+<launch>
+
+    <param name="autoexplorer/occupancy_thr" value="0"/>
+    <!-- start SLAM -->
+    <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping"> 
+        <!--remap from="/scan"  to="/base_scan"/-->
+        <param name="map_frame" value="/map"/>
+        <param name="odom_frame" value="/odom"/>
+        <param name="base_frame" value="/base_link"/>
+        <!--param name="maxUrange" value="60"/-->          <!-- 80 -->
+        <!--param name="map_update_interval" value="3"/--> <!-- 5 -->
+    </node>
+
+
+</launch>

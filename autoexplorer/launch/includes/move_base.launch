@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- add -->
+  <master auto="start"/>
+
+  <!-- add -->
+  <arg name="slam_method" default="gmapping"/>
+  <include file="$(find autoexplorer)/launch/includes/start_$(arg slam_method).launch">
+  </include>
+
+  <node pkg="move_base" type="move_base" name="move_base" respawn="false" >
+    <!--rosparam file="$(find former_navigation)/config/move_base.yaml" command="load"/-->
+    <rosparam file="$(find autoexplorer)/param/base_local_planner_params.yaml" command="load" /> 
+
+    <rosparam file="$(find former_navigation)/config/costmap_common.yaml" command="load" ns="global_costmap"/>
+    <rosparam file="$(find former_navigation)/config/costmap_common.yaml" command="load" ns="local_costmap"/>
+    
+    <rosparam file="$(find former_navigation)/config/local_costmap.yaml" command="load"/>
+    <rosparam file="$(find former_navigation)/config/global_costmap.yaml" command="load"/>
+  
+    <!-- add -->
+    <param name="global_costmap/global_frame" value="map"/>
+    <param name="global_costmap/robot_base_frame" value="base_link"/> 
+    <param name="local_costmap/global_frame" value="map"/>
+    <param name="local_costmap/robot_base_frame" value="base_link"/>
+	
+    <!-- add -->
+    <!--remap from="cmd_vel" to="/move_base/cmd_vel"/>
+    <remap from="odom" to="/odometry/filtered"/-->
+  </node>
+
+</launch>
