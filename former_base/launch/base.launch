@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<launch>
+
+  <rosparam file="$(find former_base)/config/former.yaml" command="load"/>
+
+  <!-- GPIO node -->
+  <node pkg="roas_base" type="roas_gpio_node" name="roas_gpio_node" output="screen"/>
+
+  <!-- Communication with the robot's controller -->
+  <node pkg="former_base" type="former_base_node" name="former_base_node" output="screen"/>
+
+  <!-- Diagnostic aggregator to use rqt_robot_monitor -->
+  <node pkg="diagnostic_aggregator" type="aggregator_node" name="diagnostic_aggregator"/>
+ 
+  <!-- Load the robot's URDF -->
+  <include file="$(find former_description)/launch/description.launch"/>
+
+  <!-- Robot controllers and localization -->
+  <include file="$(find former_control)/launch/control.launch"/>
+
+  <!-- Teleoperation using joystick -->
+  <include file="$(find former_teleop)/launch/teleop.launch"/>
+
+  <!-- MICROINFINITY XG6000 -->
+  <include file="$(find former_base)/launch/include/mi.launch"/>
+
+  <!-- SICK TiM571 -->
+  <include file="$(find former_base)/launch/include/sick_tim.launch"/>
+
+  <!-- Intel RealSense D435 -->
+  <include file="$(find former_base)/launch/include/d435.launch"/>
+
+</launch>

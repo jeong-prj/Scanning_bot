@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Include the launch files you want to run automatically -->
+
+  <!-- Auto Docking -->
+  <include file="$(find roas_dock)/launch/auto_dock.launch"/>
+
+</launch>

@@ -1,0 +1,41 @@
+former_base_node:
+  port: "/dev/former"
+  baud: 115200
+  robot: "former"
+  joint: ['left_wheel_joint', 'right_wheel_joint']
+  control_frequency: 50
+
+diagnostic_aggregator:
+  pub_rate: 1.0
+  analyzers:
+    robot:
+      type: diagnostic_aggregator/AnalyzerGroup
+      path: Former
+      analyzers:
+        base:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Base
+          find_and_remove_prefix: 'former_base_node'
+          timeout: 5.0
+          contains: [
+            'former_base_node: Robot',
+            'former_base_node: Temperature',
+            'former_base_node: Battery']
+    teleop:
+      type: diagnostic_aggregator/AnalyzerGroup
+      path: Teleop
+      analyzers:
+        joystick:
+          type: diagnostic_aggregator/GenericAnalyzer
+          path: Bluetooth Joystick
+          find_and_remove_prefix: 'joy_node'
+          timeout: 5.0
+          expected: [
+            'joy_node: Joystick Driver Status']
+
+roas_gpio_node:
+  port: "/dev/gpio"
+  baud: 115200
+  ultrasonic_frame: ["left_ultrasonic", "right_ultrasonic"]
+  convert_range_to_scan: false
+  digital_io_topic: [docked]
