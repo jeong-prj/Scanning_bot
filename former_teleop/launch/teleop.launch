@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+   
+  <arg name="joy_model" default="ps5"/>
+
+  <!-- Joy node -->
+  <node pkg="joy" type="joy_node" name="joy_node">
+    <param name="dev" value="/dev/input/$(arg joy_model)"/>
+    <param name="deadzone" value="0.1"/>
+    <param name="autorepeat_rate" value="20.0"/>
+  </node>
+
+  <!-- Teleop node -->
+  <node pkg="former_teleop" type="former_teleop_node" name="former_teleop_node" output="screen">
+    <rosparam command="load" file="$(find former_teleop)/config/$(arg joy_model).yaml"/>
+    <remap from="/joy" to="/joy"/>
+    <remap from="/cmd_vel" to="/teleop/cmd_vel"/>
+  </node>
+
+</launch>

@@ -1,0 +1,11 @@
+axis_linear_x: 1
+axis_linear_y: 0
+axis_angular: 2
+
+speed_up: 3        # Speed increased by 20%
+speed_down: 1      # Speed decreased by 20%
+deadman: 4
+
+max_linear_x: 1.5
+max_linear_y: 0
+max_angular: 3.0
