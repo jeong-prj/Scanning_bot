@@ -1,0 +1,60 @@
+How to do,,
+
+맵의 너비와 높이
+width, height
+x = n
+y = m
+
+map blur - 5cm -> 10cm
+for i -> n: +2
+    for j -> m: +2
+        map[i][j], map[i+1][j]
+        map[i][j+1], map[i+1][j+1]
+        if free > other:
+            new_map[x][y] = free
+
+combine 20 cell direction - left
+for i -> n:
+    for j -> m:
+        if new_map[i][j] == FREE:
+            //find first free space
+            new_map[i][j] == VISITED
+            start_x, start_y = i, j
+            covering(i, j)
+
+            
+            
+covering(i, j):
+    for i -> i + 2m:
+        if map[][] == FREE:
+            map[][] == VISITED
+            
+        else
+            return 00, 00
+
+            
+            
+            
+            
+            
+    up        
+left  right
+   down
+   
+   
+left -> left until 2m or meet undefined, obstacle spaces..
+forward same direction to get some space
+
+
+
+
+0000000000000
+0000011111000
+0000011111000
+0000011000000
+0000011000000
+0000011111110
+0000011111110
+0000011111110
+0000011000000
+0000000000000
