@@ -9,7 +9,7 @@ using namespace std;
 #define CANT 0
 #define FREE 1
 #define VISI 2
-#define SIZE 2
+#define SIZE 3
 //                        up r dow  l 
 array<int, 4> x_direc = { 0, 1, 0, -1};
 array<int, 4> y_direc = {-1, 0, 1,  0};
@@ -165,23 +165,24 @@ array<int, 2> findRect(int map[], int wid, int x, int y){
     return {x+(size_x*corner[0])+(corner[0]*(-1)), y+(size_y*corner[1])+(corner[1]*(-1))};
 }
 
-array<float,2> findMiddle(int map[], int x[], array<int, 2> &y){
+array<float,2> findMiddle(int map[], int start[], array<int, 2> &end){
     array<float, 2> middle = {-1, -1};
     
-    middle[0] = x[0] == x[1] ? x[0]: (x[0]+x[1])/2.0;
-    middle[1] = y[0] == y[1] ? y[0]: (y[0]+y[1])/2.0;
+    middle[0] = start[0] == end[0] ? start[0]: (start[0]+end[0])/2.0;
+    middle[1] = start[1] == end[1] ? start[1]: (start[1]+end[1])/2.0;
     
     return middle;
 }
 
 int main(){
-    const int w = 6;
-    const int h = 4;
+    const int w = 5;
+    const int h = 5;
     
-    int map[] = {0,1,1,0,1,1,
-                 0,1,1,0,1,1,
-                 0,1,1,1,1,1,
-                 0,1,1,1,1,1};
+    int map[] = {0,0,0,0,0,
+                 0,1,1,1,0,
+                 0,1,1,0,0,
+                 0,1,1,0,0,
+                 0,0,0,0,0};
     
     queue <array<int, 2>> candidates;
     vector<array<float,2>> middles; 
