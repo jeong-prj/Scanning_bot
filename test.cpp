@@ -110,15 +110,16 @@ array<int, 2> findRect(int map[], int wid, int x, int y){
             }
             
             else if(t==i){
-                cout<<"t==i , prevent double check"<<endl;
+                cout<<"t==i, prevent double check"<<endl;
             }
             
-            //if there are free space
-            else if(map[pos_x] == FREE && done[0] == 0){
+            //else if(map[pos_x] == FREE && done[0] == 0){
+            else if(map[pos_x] == FREE){    
                 map[pos_x] = VISI;
             }
             
-            else if(map[pos_x] != FREE && done[0] == 0){
+            //else if(map[pos_x] != FREE && done[0] == 0){
+            else{
                 done[0] = 1;
                 if(t != 0){
                     for(int b=0; b<t; b++){
@@ -142,12 +143,13 @@ array<int, 2> findRect(int map[], int wid, int x, int y){
                 done[1] = 1;
                 cout<<"dosent need y diffrent x"<<endl;
             }
-            else if(map[pos_y] == FREE && done[1] == 0){
+            //else if(map[pos_y] == FREE && done[1] == 0){
+            else if(map[pos_y] == FREE){
                 map[pos_y] = VISI;
             }
-            else if(map[pos_y] != FREE && done[1] == 0 ){
+            //else if(map[pos_y] != FREE && done[1] == 0 ){
+            else{
                 done[1] = 1;
-                
                 if(t != 0){
                     for(int b=0; b<t; b++){
                         int ex_y_pose = getPosition(wid, x+((t-b-1)*corner[0]), check_y);
@@ -183,6 +185,13 @@ int main(){
                  0,1,1,0,0,
                  0,1,1,0,0,
                  0,0,0,0,0};
+    /*
+    int map[] = {0,0,0,0,0,0,0,0,0,
+                 0,0,0,0,1,1,1,0,0,
+                 0,1,1,0,1,1,1,0,0,
+                 0,1,1,1,1,1,1,0,0,
+                 0,0,0,0,0,0,0,0,0};
+    */
     
     queue <array<int, 2>> candidates;
     vector<array<float,2>> middles; 
