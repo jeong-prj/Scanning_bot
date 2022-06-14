@@ -20,6 +20,7 @@
     <param name="oscillation_distance" value="0.5" />
     <param name="planner_patience" value="1" />
     <param name="controller_patience" value="1" /> 
+    <remap from="cmd_vel" to="/former_base_controller/cmd_vel"/>
     <!--remap from="cmd_vel" to="mobile_base/commands/velocity"/-->
     <!--remap from="cmd_vel" to="move_base_node/cmd_vel"/-->
         

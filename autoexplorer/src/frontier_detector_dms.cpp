@@ -78,7 +78,10 @@ mp_cost_translation_table(NULL)
 	m_markercandpub = m_nh.advertise<visualization_msgs::Marker>("detected_shapes", 10);
 	m_markerfrontierpub = m_nh.advertise<visualization_msgs::Marker>("filtered_shapes", 10);
 	m_unreachpointpub = m_nh.advertise<visualization_msgs::Marker>("unreachable_shapes", 10);
-
+    
+    //publish e_gridmap!!
+    m_egridmappub = m_nh.advertise<nav_msgs::OccupancyGrid>("m_gridmap_fin", 1000);
+    
 	m_velpub		= m_nh.advertise<geometry_msgs::Twist>("cmd_vel",10);
 	m_donepub		= m_nh.advertise<std_msgs::Bool>("exploration_is_done",1);
 
@@ -234,6 +237,17 @@ void FrontierDetectorDMS::publishDoneExploration( )
 	done_task.data = true;
 	m_donepub.publish( done_task );
 }
+
+ //publish e_gridmap!!
+void FrontierDetectorDMS::publishGridmapToSimple( )
+{
+    ROS_INFO("send gridmap to simple");
+    ROS_INFO("send map %d, %d", m_gridmap.info.width, m_gridmap.info.height);
+    //for(int i=0; i<m_gridmap.info.width*m_gridmap.info.height;i++){
+    //    ROS_INFO("%c ", m_gridmap.data[i]);
+    //}
+    m_egridmappub.publish( m_gridmap );
+} 
 
 void FrontierDetectorDMS::publishResetGazebo( )
 {

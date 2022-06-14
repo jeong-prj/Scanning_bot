@@ -20,18 +20,39 @@ ver 1.0.0
 namespace autoexplorer
 {
 
-SimpleNavigationGoals::SimpleNavigationGoals()
-{
-
+SimpleNavigationGoals::SimpleNavigationGoals(const ros::NodeHandle &nh_):
+m_nh(nh_){ 
+    m_gridmapsub = m_nh.subscribe("m_gridmap_fin", 1000, &SimpleNavigationGoals::mapCallback, this);
+    m_mapAvailable = 0;
+    
 }
 
-SimpleNavigationGoals::~SimpleNavigationGoals()
-{
-
-}
+SimpleNavigationGoals::~SimpleNavigationGoals(){ }
 
 void SimpleNavigationGoals::right(){
     ROS_INFO("send goal right\n");
+}
+
+void SimpleNavigationGoals::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg){
+    m_gridmap = *msg;
+    ROS_INFO("map map");
+    m_data = m_gridmap.data;
+    m_resolution = m_gridmap.info.resolution;
+    m_rows = m_gridmap.info.height;
+    m_cols = m_gridmap.info.width;
+    m_mapAvailable = 1;
+    
+    ROS_INFO("Got map %d, %d", m_rows, m_cols);
+    for(int i=0; i<m_rows*m_cols;i++){
+        ROS_INFO("%c ", m_data[i]);
+    }
+}
+
+void SimpleNavigationGoals::GetMap(){
+    ROS_INFO("waiting subscribe");
+    
+    
+    //    const std::unique_lock<mutex> lock(s_mutex_gridmap);
 }
 
 void SimpleNavigationGoals::SendGoal()
@@ -65,15 +86,15 @@ void SimpleNavigationGoals::SendGoal()
 	ROS_INFO("setting the goal to (%f, %f, %f)\n", goal.target_pose.pose.position.x, goal.target_pose.pose.position.y, goal.target_pose.pose.orientation.w);
 // inspect the path
 //////////////////////////////////////////////////////////////////////////////////////////////
-ROS_INFO("+++++++++++++++++++++++++ @msimpleNavigationGoals, sending a goal +++++++++++++++++++++++++++++++++++++\n");
-	m_move_client_SNG.sendGoal(goal);
-ROS_INFO("+++++++++++++++++++++++++ @simpleNavigationGoals, a goal is sent +++++++++++++++++++++++++++++++++++++\n");
-	m_move_client_SNG.waitForResult();
-ROS_INFO("+++++++++++++++++++++++++ @simpleNavigationGoals, waiting for result +++++++++++++++++++++++++++++++++++++\n");
+    ROS_INFO("+++++++++++++++++++++++++ @msimpleNavigationGoals, sending a goal +++++++++++++++++++++++++++++++++++++\n");
+        m_move_client_SNG.sendGoal(goal);
+    ROS_INFO("+++++++++++++++++++++++++ @simpleNavigationGoals, a goal is sent +++++++++++++++++++++++++++++++++++++\n");
+        m_move_client_SNG.waitForResult();
+    ROS_INFO("+++++++++++++++++++++++++ @simpleNavigationGoals, waiting for result +++++++++++++++++++++++++++++++++++++\n");
     if(m_move_client_SNG.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
         ROS_INFO("Move successfully \n");
     else
         ROS_INFO("Failed \n");
-}
+    }
 
 }

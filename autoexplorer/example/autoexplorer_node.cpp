@@ -57,7 +57,7 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "frontier_detector");
   const ros::NodeHandle nh;
   const ros::NodeHandle private_nh("~");
-
+  
   ros::WallTime start_, end_;
 
   ROS_INFO("args: %s %s %s\n", argv[0], argv[1], argv[2]);
@@ -124,23 +124,27 @@ int main(int argc, char** argv)
 			  }
 		  }
 		  //front_detector_dms.publishDone();
-		  ROS_WARN(" Shutting down the making map task \n");
-		  ROS_INFO("Simple navigation goals starts \n");
-		  SimpleNavigationGoals send_goal;
-		  //ros::spinOnce();
-		  send_goal.right();
-		  send_goal.SendGoal();
+		  ROS_WARN(" Shutting down making a map \n");
+        
+		  //ROS_INFO("Simple navigation goals starts \n");
+		  
+          //SimpleNavigationGoals simple_goal(nh);
+          
+          //ros::spinOnce();
+          
+          //send the completed map
+          ROS_INFO("publish");
+          front_detector_dms.publishGridmapToSimple();
+          
 		  front_detector_dms.publishDoneExploration();
 		  ROS_WARN(" Shutting down the simple sending a goal task \n");
 		  break;
   	  }
   	  default: ROS_ERROR("Invalid slam method \n");
   }
-
-  ROS_WARN(" Shutting down all task \n");
-  /*add for send goals*/
   
-  /*add for send goals*/
+  ROS_WARN(" Shutting down all task \n");
+  
   //ros::shutdown(); lets shutdown from outside
 
   return 0;

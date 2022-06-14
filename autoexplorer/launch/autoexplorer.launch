@@ -21,8 +21,9 @@
 
 	<node pkg="autoexplorer" type="autoexplorer_node" name="autoexplorer" args="$(arg slam_method) $(arg numthreads)" output="screen" >
         <param name="frame_id" type="string" value="map" />
+        <remap from="cmd_vel" to="/former_base_controller/cmd_vel"/>
     </node>
        
-    <!--node name="rviz" pkg="rviz" type="rviz" required="true" args="-d $(arg rviz_config)"/-->
+    <node name="rviz" pkg="rviz" type="rviz" required="true" args="-d $(arg rviz_config)"/>
 
 </launch>

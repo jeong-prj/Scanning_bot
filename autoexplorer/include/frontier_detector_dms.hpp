@@ -83,6 +83,7 @@ public:
 	bool isValidPlan( vector<cv::Point>  );
 	bool explorationisdone() const { return mb_explorationisdone; };
 	void publishDoneExploration() ;
+    void publishGridmapToSimple();
 	void publishResetGazebo() ;
 
 //	geometry_msgs::PoseStamped StampedPosefromSE2( float x, float y, float yaw ) ;
@@ -123,7 +124,9 @@ protected:
 	ros::Subscriber m_mapsub, m_poseSub, m_velSub, m_mapframedataSub, m_globalCostmapSub, m_globalCostmapUpdateSub,
 					m_globalplanSub, m_unreachablefrontierSub ;
 	ros::Publisher m_targetspub, m_markercandpub, m_markerfrontierpub,
-					m_makergoalpub, m_currentgoalpub, m_unreachpointpub, m_velpub, m_donepub, m_resetgazebopub ;
+					m_makergoalpub, m_currentgoalpub, m_unreachpointpub, m_velpub, m_donepub, m_resetgazebopub , m_egridmappub ;
+					//publish e_gridmap!!
+						
 
 	int mn_numthreads;
 	int m_nglobalcostmapidx ;
