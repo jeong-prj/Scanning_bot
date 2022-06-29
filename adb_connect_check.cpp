@@ -21,10 +21,9 @@ string exec(const char* cmd) {
 }
 
 int main(){
-    //system("adb connect 192.168.0.43:5555");
-    
-    //cout << exec("adb devices");
     if(exec("adb devices")=="List of devices attached\n\n"){
+        //glab5g - 192.168.0.43
+        //matterport - 10.77.80.203 
         system("adb connect 192.168.0.43");
     }
     
