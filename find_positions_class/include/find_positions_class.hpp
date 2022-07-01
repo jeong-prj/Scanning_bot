@@ -69,16 +69,15 @@ public:
     m_points.lifetime = ros::Duration();
   }
   void writeDataFile (vector<array<double,2>> positions);
-  void solving_tsp_concorde(vector<int> * tour, int flag);
+  ////void solving_tsp_concorde(vector<int> * tour, int flag);
+  void solving_tsp_concorde(int flag);
   void padding(int pose, int siz);
-  void findWaypointsDistance(vector<int> *tour);
-  
+  ////void findWaypointsDistance(vector<int> *tour);
+  void findWaypointsDistance(int *tour);
   void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg);
   
   int m_mapAvailable = 0;
-  TSP::TSPSolver m_TSPSolver;
-  ros::Publisher m_wayPointsPub;
-  visualization_msgs::Marker m_points, line_strip;
+  
   vector<array<double,2>> waypointsWorld;
   
 protected:
@@ -89,20 +88,17 @@ protected:
   ros::NodeHandle m_nh;
   
   ros::Subscriber m_gridmapsub;
+  ros::Publisher m_wayPointsPub;
   
-  
+  TSP::TSPSolver m_TSPSolver;
   int map_width;
   int map_height;
-  int map_resolution;
+  double map_resolution;
   array<double, 2> gridmap_origin_pose;
   vector<signed char> origin_map;
   vector<signed char> map_flags;
-  
+  visualization_msgs::Marker m_points, line_strip;
   vector<array<double,2>> middles;
-  
-  
-  
-  
   vector<array<double,2>> waypoints;
   
 
