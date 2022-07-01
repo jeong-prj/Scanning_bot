@@ -55,7 +55,8 @@ void FindPositions::writeDataFile (vector<array<double,2>> positions) {
 }
 
 //Receive a symmetric 2D distance matrix (dist) and create a TSP optimal tour (tour)
-void FindPositions::solving_tsp_concorde(vector<int> * tour, int flag){
+////void FindPositions::solving_tsp_concorde(vector<int> * tour, int flag){
+void FindPositions::solving_tsp_concorde(int flag){
   int rval = 0; //Concorde functions return 1 if something fails
   double szeit; //Measure cpu time
   
@@ -88,28 +89,37 @@ void FindPositions::solving_tsp_concorde(vector<int> * tour, int flag){
                               &m_TSPSolver.hit_timebound, m_TSPSolver.silent, &rstate);
   geometry_msgs::Point p;
   
+  ////cout <<m_TSPSolver.ncount<<"tour.size: "<<tour->size()<<endl;
   cout <<m_TSPSolver.ncount<<endl;
   //Creating a sequential tour
-  for(int i = 0; i < m_TSPSolver.ncount; i++){
-    tour->push_back(i);
-  }
-  cout <<tour->size()<<endl;
-  for (int i = 0; i < m_TSPSolver.ncount; i++) {
-    tour->at(i) = m_TSPSolver.out_tour[i];
-    if(flag ==1){
+  //for(int i = 0; i < m_TSPSolver.ncount; i++){
+  //  tour->push_back(i);
+  //}
+  //cout <<tour->size()<<endl;
+  if(flag ==1){
+    for (int i = 0; i < m_TSPSolver.ncount; i++) {
+      ////tour->at(i) = m_TSPSolver.out_tour[i];
+      
       int turn= m_TSPSolver.out_tour[i];
       double x=waypoints[turn][0], y=waypoints[turn][1];
-      
       array<double, 2> world_position = gridmapToworld(x,y);
       waypointsWorld.push_back({world_position[0], world_position[1]});
-      p.x=world_position[0]; p.y=world_position[1]; p.z=0.0;
       
+      p.x=world_position[0]; p.y=world_position[1]; p.z=0.0;
+        
       m_points.points.push_back(p);
       line_strip.points.push_back(p);
     }
+    
+    m_wayPointsPub.publish(m_points);
+    m_wayPointsPub.publish(line_strip);
   }
-  cout<<endl<<"done"<<endl;
-
+  else{
+    findWaypointsDistance(m_TSPSolver.out_tour); 
+  }
+  
+  cout<<endl<<"done: "<<flag<<endl;
+  
   //szeit = CCutil_zeit();
   CC_IFFREE (m_TSPSolver.out_tour, int);
 //  CC_IFFREE (m_TSPSolver.name, char);
@@ -142,7 +152,7 @@ void FindPositions::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg){
   gridmap_origin_pose = {m_gridmap.info.origin.position.x, m_gridmap.info.origin.position.y};
   m_mapAvailable = 1;
     
-  ROS_INFO("%d Got map %d, %d, size: %d", m_mapAvailable, map_width, map_height, origin_map.size());
+  ROS_INFO("%d Got map %d, %d, size: %d", map_resolution, map_width, map_height, origin_map.size());
   
   for(int i=0; i<origin_map.size();i++){
     if(origin_map[i]!=0){
@@ -162,14 +172,18 @@ void FindPositions::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg){
   }
 }
 
-void FindPositions::findWaypointsDistance(vector<int> *tour){
-  for(int i=0; i<tour->size(); i++){
-    int turn = tour->at(i);
+////void FindPositions::findWaypointsDistance(vector<int> *tour){
+void FindPositions::findWaypointsDistance(int* tour){
+  ////for(int i=0; i<tour->size(); i++){
+  ////  int turn = tour->at(i);
+  for(int i=0; i<m_TSPSolver.ncount; i++){
+    int turn = tour[i];
+
     array<double, 2> cur_2D = middles[turn];
     double x=cur_2D[0], y=cur_2D[1];
     int pose=get2DToPose(x, y);
     if(map_flags[pose]==0){
-      cout<< "position: "<<x<< ", "<<y<<endl;
+      //cout<< i<<"position"<<turn<<": "<<x<< ", "<<y<<endl;
       waypoints.push_back({x, y});
       
       padding(pose, 38);
