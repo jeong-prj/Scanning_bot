@@ -42,6 +42,6 @@ int main(int argc, char** argv){
   mapPub.publish(s_fin_gridmap);
   explorerPub.publish(done_task);
   ROS_INFO("map x: %d, y: %d", s_fin_gridmap.info.width, s_fin_gridmap.info.height);
-  ROS_INFO("send map..");\
+  ROS_INFO("send map..");
   
 }
