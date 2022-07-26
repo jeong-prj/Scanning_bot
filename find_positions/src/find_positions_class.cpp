@@ -269,10 +269,6 @@ int FindPositions::eraseInvalidByDist(){
       }
     }  
   }
-  else{
-  
-    
-  }
   
   m_wayPointsPub.publish(m_points);
   m_wayPointsPub.publish(line_strip);
