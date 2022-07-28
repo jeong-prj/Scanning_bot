@@ -78,11 +78,11 @@ public:
   void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg);
   
   int eraseInvalidByDist();
-  void bfs(int start, bool* visited, vector<int>* graph, vector<int>& sequence);
+  int bfs(int node_size, vector<int>* graph, vector<int>& sequence);
   
   int m_mapAvailable = 0;
   
-  vector<array<double,2>> waypointsWorld;
+  vector<array<double,2>> result_waypoints;
   
 protected:
   //                     up ri  do  le
@@ -101,6 +101,7 @@ protected:
   array<double, 2> gridmap_origin_pose;
   vector<signed char> origin_map;
   vector<signed char> map_flags;
+  vector<array<double,2>> waypointsWorld;
   //ej_marker
   visualization_msgs::Marker m_points, line_strip;
   vector<array<int,2>> middles;
