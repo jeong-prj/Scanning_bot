@@ -178,31 +178,41 @@ void FindPositions::findWaypointsDistance(int* tour){
     if(map_flags[pose]==0){
       waypoints.push_back({x, y});
       
-      padding(pose, 30);
+      padding(pose, 32);
     }
   }
 }
 
 
 
-void FindPositions::bfs(int start, bool* visited, vector<int>* graph, vector<int>& sequence) {
+int FindPositions::bfs(int node_size, vector<int>* graph, vector<int>& sequence){
   queue<int> q;
-  q.push(start);
-  visited[start] = true;
-
-  while (!q.empty()) {
-    int x = q.front();
-    q.pop();
-    ROS_INFO("graph node: %d", x);
-    sequence.push_back(x);
-    for (int i = 0; i < graph[x].size(); i++) {
-      int y = graph[x][i];
-      if (!visited[y]) {
-        q.push(y);
-        visited[y] = true;
+  int size=0;
+  bool visited[node_size];
+  for(int i=0;i<node_size;i++){
+    if(!visited[i]&& graph[i].size()>0){
+      q.push(i);
+      
+      while(!q.empty()){
+        int vertex=q.front();
+        q.pop();
+        
+        visited[vertex]=true;
+        ROS_INFO("size: %d, added node: %d", size, vertex);
+        sequence.push_back(vertex);
+        size++;
+        
+        for (int j = 0; j < graph[vertex].size(); j++) {
+          int y = graph[vertex][j];
+          if (!visited[y]) {
+            q.push(y);
+            visited[y] = true;
+          }
+        }
       }
     }
   }
+  return size;
 }
 
 
@@ -214,8 +224,11 @@ int FindPositions::eraseInvalidByDist(){
     ROS_INFO("couldn't erase Invalid path");
     return 0;
   }
+  
+  //node's waypoins world
   vector<vector<array<double,2>>> v;
-  vector<array<int,2>> result_invalid;
+  ////vector<array<int,2>> result_invalid;
+  ////vector<array<int,2>> tmp_node;
   
   int flag = 0;
   v.push_back({waypointsWorld[0]});
@@ -231,45 +244,64 @@ int FindPositions::eraseInvalidByDist(){
     }
   }
   
-  bool visited[v.size()];
-  vector<int> graph[v.size()];
+  
+  int node_size = v.size();
+  bool visited[node_size];
+  vector<int> graph[node_size];
   vector<int> sequence;
   
-  for(int i=0;i<v.size(); i++){
-    for(int j=0;j<v.size(); j++){
+  for(int i=0;i<node_size; i++){
+    int found = 0;
+    int node = 0;
+    double min_dist = DBL_MAX;
+    for(int j=0;j<node_size; j++){
       if(i==j) continue;
       for(int k=0;k<v[j].size(); k++){
         double dist_f = distance(v[i][0][0], v[i][0][1], v[j][k][0], v[j][k][1]);
         if(dist_f<=2.5){
-          result_invalid.push_back({j, i});
+          //result_invalid.push_back({j, i});
+          cout<<"{ "<<j<<", "<<i<<" } "<<endl;
           graph[j].emplace_back(i);
+          found=1;
           break;
+        }
+        else{
+          if(min_dist>dist_f){
+            min_dist=dist_f;
+            node=j;
+          }
         }
       }
     }
+    if(found==0){
+      cout<<"{ "<<node<<", "<<i<<" } "<<endl;
+      ////result_invalid.push_back({node, i});
+      ////tmp_node.push_back({node, i});
+      graph[node].emplace_back(i);
+    }
   }
-  
+  /*
   for(int i=0;i<result_invalid.size(); i++){
     ROS_INFO("{ %d, %d }", result_invalid[i][0], result_invalid[i][1]);
   }
-  bfs(0, visited, graph, sequence);
+  */
+  int size = bfs(node_size, graph, sequence);
   
   ROS_INFO("sequence size: %lu", sequence.size());
   
   geometry_msgs::Point p;
   
-  if(sequence.size()==v.size()){
-    for(int i=0;i<sequence.size(); i++){
-      ROS_INFO("sequence: %d", sequence[i]);
-      for(int k=0;k<v[sequence[i]].size(); k++){
-        ROS_INFO("sequence of waypoints: %lf, %lf", v[sequence[i]][k][0], v[sequence[i]][k][1]);
-        p.x=v[sequence[i]][k][0]; p.y=v[sequence[i]][k][1]; p.z=0.0;
-        m_points.points.push_back(p);
-        line_strip.points.push_back(p);
-      }
-    }  
-  }
-  
+  for(int i=0;i<sequence.size(); i++){
+    ROS_INFO("sequence: %d", sequence[i]);
+    for(int k=0;k<v[sequence[i]].size(); k++){
+      ROS_INFO("sequence of waypoints: %lf, %lf", v[sequence[i]][k][0], v[sequence[i]][k][1]);
+      p.x=v[sequence[i]][k][0]; p.y=v[sequence[i]][k][1]; p.z=0.0;
+      result_waypoints.push_back(v[sequence[i]][k]);
+      m_points.points.push_back(p);
+      line_strip.points.push_back(p);
+    }
+  }  
+
   m_wayPointsPub.publish(m_points);
   m_wayPointsPub.publish(line_strip);
   return 1;
