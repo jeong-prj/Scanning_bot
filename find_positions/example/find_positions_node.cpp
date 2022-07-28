@@ -17,10 +17,10 @@ int main(int argc, char **argv){
   
   m_fp.solving_tsp_concorde(1);
   
-  for(int i = 0; i < m_fp.waypointsWorld.size(); i++){
+  for(int i = 0; i < m_fp.result_waypoints.size(); i++){
     ROS_INFO("Send goal %d", i+1);
-    //cout<<"node_waypoints: "<<m_fp.waypointsWorld[i][0]<<", " <<m_fp.waypointsWorld[i][1]<<endl;
-    double x=m_fp.waypointsWorld[i][0], y=m_fp.waypointsWorld[i][1];
+    //cout<<"node_waypoints: "<<m_fp.result_waypoints[i][0]<<", " <<m_fp.result_waypoints[i][1]<<endl;
+    double x=m_fp.result_waypoints[i][0], y=m_fp.result_waypoints[i][1];
     
     move_base_msgs::MoveBaseGoal waypoint_goal;
     waypoint_goal.target_pose.header.frame_id = "map";
