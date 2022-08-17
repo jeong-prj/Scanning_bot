@@ -2,7 +2,7 @@
 <launch>
   <master auto="start"/>
     
-  <arg name="slam_method" default="gmapping"/>   
+  <arg name="slam_method" default="slam_toolbox"/>   
   <!--arg name="slam_method" value="$(arg slam_method)"/-->
   <include file="$(find autoexplorer)/launch/includes/start_$(arg slam_method).launch">
   </include>
@@ -21,7 +21,7 @@
     <param name="planner_patience" value="1" />
     <param name="controller_patience" value="1" /> 
     <!--remap from="cmd_vel" to="mobile_base/commands/velocity"/-->
-    <!--remap from="cmd_vel" to="move_base_node/cmd_vel"/-->
+    <remap from="cmd_vel" to="/former_base_controller/cmd_vel"/>
         
     <!--param name="recovery_behavior_enabled" value="false" /-->
     <rosparam file="$(find autoexplorer)/param/costmap_common_params.yaml" command="load" ns="global_costmap" />
