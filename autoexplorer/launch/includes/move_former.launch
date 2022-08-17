@@ -16,7 +16,7 @@
     <!--param name="footprint_padding" value="0.01" /-->
     <param name="controller_frequency" value="5.0" />
     <!--param name="controller_patience" value="1.0" /--> <!--3.0-->
-    <param name="oscillation_timeout" value="30.0" />
+    <param name="oscillation_timeout" value="12.0" />
     <param name="oscillation_distance" value="0.5" />
     <param name="planner_patience" value="1" />
     <param name="controller_patience" value="1" /> 
