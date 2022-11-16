@@ -1,5 +1,4 @@
 <!-- 
-
 -->
 <launch>
 	<node pkg="find_positions" type="find_positions_node" name="find_positions" output="screen" >
