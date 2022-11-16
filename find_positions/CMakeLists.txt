@@ -16,6 +16,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  move_base_msgs
+  visualization_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -107,10 +109,20 @@ find_package(catkin REQUIRED COMPONENTS
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
+
+find_package(OpenMP REQUIRED)
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
+
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS costmap_2d map_msgs nav_msgs roscpp rospy std_msgs
+  CATKIN_DEPENDS costmap_2d map_msgs nav_msgs roscpp rospy std_msgs visualization_msgs actionlib move_base_msgs
+  DEPENDS OpenMP
 #  DEPENDS system_lib
 )
 
@@ -129,6 +141,29 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/lib/concorde
   ${PROJECT_SOURCE_DIR}/lib/qsopt
   ${catkin_INCLUDE_DIRS}
+  ~/catkin_ws/src/navigation/move_base/include
+  ~/catkin_ws/src/navigation/nav_core/include
+  ~/catkin_ws/src/navigation/costmap_2d/include
+  ~/catkin_ws/src/autoexplorer/include
+  ~/catkin_ws/src/navigation/costmap_2d/include 
+)
+
+set(FIND_POSITIONS_PROJ_DIRECTORY ${PROJECT_SOURCE_DIR} )
+file(GLOB_RECURSE SRC_FILES 
+${PROJECT_SOURCE_DIR}/src/*.cpp
+)
+
+add_library(find_pose STATIC ${SRC_FILES})
+target_link_libraries(find_pose 
+  ${catkin_LIBRARIES}
+  ${PROJECT_SOURCE_DIR}/lib/concorde/concorde.a
+  ${PROJECT_SOURCE_DIR}/lib/qsopt/qsopt.a
+  ${CMAKE_PREFIX_PATH}/lib
+  ${OpenMP_LIBS}
+)
+
+set_target_properties( find_pose PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY ${FIND_POSITIONS_PROJ_DIRECTORY}/lib 
 )
 
 ## Declare a C++ library
@@ -144,7 +179,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/find_positions_node.cpp)
+add_executable(${PROJECT_NAME}_node example/find_positions_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -159,10 +194,11 @@ add_executable(${PROJECT_NAME}_node src/find_positions_node.cpp)
 #add_library(find_positions SHARED ${SRC_FILES})
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
-  ${PROJECT_SOURCE_DIR}/lib/concorde/concorde.a
-  ${PROJECT_SOURCE_DIR}/lib/qsopt/qsopt.a
-  ${CMAKE_PREFIX_PATH}/lib
-  ${catkin_LIBRARIES}
+  #${PROJECT_SOURCE_DIR}/lib/concorde/concorde.a
+  #${PROJECT_SOURCE_DIR}/lib/qsopt/qsopt.a
+  #${CMAKE_PREFIX_PATH}/lib
+  #${catkin_LIBRARIES}
+  find_pose
 )
 
 #############
