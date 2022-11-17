@@ -2,7 +2,9 @@
 #include <ros/console.h>
 
 #include "nav_msgs/OccupancyGrid.h"
+#include "nav_msgs/Odometry.h"
 #include "std_msgs/Bool.h"
+#include "tf/transform_listener.h"
 
 #include <iostream>
 
@@ -10,22 +12,49 @@
 using namespace std;
 
 int s_map_available = 0;
+nav_msgs::Odometry odom_pose;
 nav_msgs::OccupancyGrid s_fin_gridmap;
 
 void s_mapCallBack(const nav_msgs::OccupancyGrid::ConstPtr& msg){
   s_fin_gridmap = *msg;
   s_map_available = 1;
-  ROS_INFO("got map.. %d, info: %d", s_map_available, s_fin_gridmap.data.size());
+  ROS_INFO("got map.. %d, info: %lu", s_map_available, s_fin_gridmap.data.size());
 }
 
 int main(int argc, char** argv){  
   ros::init(argc, argv, "send_map");
   ros::NodeHandle s_nh;
-
-  ros::Publisher mapPub = s_nh.advertise<nav_msgs::OccupancyGrid>("m_gridmap_fin", 1000);
+ 
+  tf::TransformListener listener;
+  tf::StampedTransform transform;
+  string mapFrameId = "map";
+  string baseFrameId = "base_link";
+  
+  try{
+    listener.waitForTransform(mapFrameId, baseFrameId, ros::Time(0), ros::Duration(3.0));
+    listener.lookupTransform( mapFrameId, baseFrameId, ros::Time(0), transform);
+  }
+  
+  catch (tf::TransformException &ex)  {
+    ROS_ERROR("%s",ex.what());
+    ros::Duration(1.0).sleep();
+  }
+  
+  geometry_msgs::PoseStamped outPose;
+  
+  outPose.pose.position.x = transform.getOrigin().x();
+  outPose.pose.position.y = transform.getOrigin().y();
+	outPose.pose.position.z = 0.f;
+	outPose.header.frame_id = mapFrameId;
+  ROS_INFO("Find position: %lf, %lf", outPose.pose.position.x, outPose.pose.position.y);
+  
+  ros::Publisher mapPub = s_nh.advertise<nav_msgs::OccupancyGrid>("/m_gridmap_fin", 1000);
   ros::Subscriber mapSub = s_nh.subscribe<nav_msgs::OccupancyGrid>("/map", 1000, s_mapCallBack);
+  
   //publish autoexplorer done
   ros::Publisher explorerPub = s_nh.advertise<std_msgs::Bool>("exploration_is_done", 1);
+  ros::Publisher startPosePub = s_nh.advertise<geometry_msgs::PoseStamped>("start_pose", 1);
+  
   
   int x; 
   cout << "Type a number 1: ";
@@ -39,9 +68,11 @@ int main(int argc, char** argv){
   std_msgs::Bool done_task;
   done_task.data = true;
   
+  startPosePub.publish(outPose);
   mapPub.publish(s_fin_gridmap);
   explorerPub.publish(done_task);
   ROS_INFO("map x: %d, y: %d", s_fin_gridmap.info.width, s_fin_gridmap.info.height);
   ROS_INFO("send map..");
   
+  return 0;
 }
