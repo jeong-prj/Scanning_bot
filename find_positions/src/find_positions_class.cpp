@@ -1,5 +1,7 @@
 #include "find_positions_class.hpp"
 #include <fstream>
+#include <limits>
+
 namespace find_positions
 {
 
@@ -58,19 +60,53 @@ double distance(double x, double y, double xx, double yy){
   return sqrt(((x-xx)*(x-xx))+((y-yy)*(y-yy)));
 }
 
-void FindPositions::writeDataFile (vector<array<int,2>> positions) {
+void FindPositions::writeDataFile (vector<array<int,2>> positions, int mode, int exclude_n) {
   ROS_INFO("function write data file");
   FILE *out = fopen (m_TSPSolver.name, "w");
-  m_TSPSolver.ncount = positions.size();
+  ROS_INFO("ncount: %d %d", positions.size(), exclude_n);
+  m_TSPSolver.ncount = positions.size()-exclude_n;
   
+  ROS_INFO("ncount: %d", m_TSPSolver.ncount);
   fprintf (out, "NAME: concorde%d\n",m_TSPSolver.ncount);
   fprintf (out, "TYPE: TSP\n");
   fprintf (out, "DIMENSION: %d\n", m_TSPSolver.ncount);
-  fprintf (out, "EDGE_WEIGHT_TYPE: EUC_2D\n");
-  fprintf (out, "NODE_COORD_SECTION\n");
-  
-  for (int i = 0; i < m_TSPSolver.ncount; i++) {
-    fprintf(out, "%d %d %d\n", i, positions[i][0], positions[i][1]);
+  if(mode == 0){
+    fprintf (out, "EDGE_WEIGHT_TYPE: EUC_2D\n");
+    fprintf (out, "NODE_COORD_SECTION\n");
+    for (int i = 0; i < m_TSPSolver.ncount; i++) {
+      fprintf(out, "%d %d %d\n", i, positions[i][0], positions[i][1]);
+    }
+  }
+  else{
+    fprintf (out, "EDGE_WEIGHT_TYPE: EXPLICIT\n");
+    fprintf (out, "EDGE_WEIGHT_FORMAT: LOWER_DIAG_ROW\n");
+    fprintf (out, "EDGE_WEIGHT_SECTION\n");
+    for (int i = 0; i < m_TSPSolver.ncount-1; i++) {
+      ROS_INFO("writing %d node for", i);
+      double xa = tsp2nodes[i][0], ya = tsp2nodes[i][1];
+      ROS_INFO("xa: %lf,ya: %lf ", xa, ya);
+      for(int j = 0; j<=i; j++){
+        if(i==j){
+          fprintf(out, "%d\n", 0);
+        }
+        else{
+          double xb = tsp2nodes[j][0], yb = tsp2nodes[j][1];
+          ROS_INFO("xb: %lf, yb: %lf ", xb, yb);
+          double path_l = calculatePath(xa, ya, xb, yb, 0);
+          fprintf(out, "%d ", (int)(path_l));
+          //ROS_INFO("%lf length of path plan", calculatePath(xa, ya, xb, yb, 0));
+          
+        }
+      }
+    }
+    
+    //add the dummy node for open loop
+    ROS_INFO("writing dummy node");
+    fprintf(out, "0 ");
+    for (int i = 0; i < m_TSPSolver.ncount-3; i++) {
+      fprintf(out, "%d ", 999);
+    }
+    fprintf(out, "0 0\n");
   }
 
   fprintf(out, "EOF\n");
@@ -78,6 +114,64 @@ void FindPositions::writeDataFile (vector<array<int,2>> positions) {
   
   ROS_INFO("done the write task");
 }
+
+int FindPositions::removeUnreach(vector<array<int,2>> positions){
+  ROS_INFO("Remove unreached nodes");
+  int removed = 0;
+  
+  //It needs to check connecting all nodes?
+  
+  vector<array<double, 2>> tmpnodes;
+  int positions_len = positions.size();
+  for (int i = 0; i < positions_len; i++) {
+    tmpnodes.push_back(gridmapToworld(positions[i][0], positions[i][1]));
+  }
+  int first_node = findFirstNode(tmpnodes);
+  
+  //Save all the A* planning results to vector somewhere
+  //Remove the node if couldn't reach to it from other nodes
+  //Then write data to the file with rearranged nodes
+  for (int i = 0; i < positions_len; i++) {
+    int cur_n = (first_node + i) % positions_len;
+    tsp2nodes.push_back(tmpnodes[cur_n]);
+  }
+  
+  //Not this way 
+  //if cant find path from cur position than those are unreached positions.
+  double xa = tsp2nodes[0][0], ya = tsp2nodes[0][1];
+  ROS_INFO("xa: %lf,ya: %lf ", xa, ya);
+  
+  double longest_l = 0;
+  int longest_i=0;
+  for (int i = 1; i < positions_len; i++) {
+    ROS_INFO("%d node for check path", i);
+    
+    double xb = tsp2nodes[i][0], yb = tsp2nodes[i][1];
+    ROS_INFO("xb: %lf, yb: %lf ", xb, yb);
+
+    double path_l = calculatePath(xa, ya, xb, yb, 0);
+    if(path_l>0){
+      if(longest_l<path_l){
+        longest_l = path_l;
+        longest_i = i;
+      }
+      continue;
+    }
+    else{
+      tsp2nodes.erase(tsp2nodes.begin()+i);
+      positions_len--;
+      i--;
+      removed++;
+    }
+  }
+  
+  array<double, 2> end_pose = tsp2nodes[longest_i];
+  tsp2nodes.erase(tsp2nodes.begin()+longest_i);
+  tsp2nodes.push_back(end_pose);
+  
+  return removed;
+}
+
 
 //Receive a symmetric 2D distance matrix (dist) and create a TSP optimal tour (tour)
 ////void FindPositions::solving_tsp_concorde(vector<int> * tour, int flag){
@@ -91,9 +185,12 @@ void FindPositions::solving_tsp_concorde(int flag){
   m_TSPSolver.name[str.size()]='\0';
   
   if(flag ==0)
-    writeDataFile(middles);
-  else
-    writeDataFile(waypoints);
+    writeDataFile(middles, 0, 0);
+  else{
+    makeMapForPath();
+    int removed_num = removeUnreach(waypoints);
+    writeDataFile(waypoints, 1, removed_num-1);
+  }
   
   CCrandstate rstate;
   int seed = rand();
@@ -101,6 +198,7 @@ void FindPositions::solving_tsp_concorde(int flag){
   m_TSPSolver.out_tour = CC_SAFE_MALLOC (m_TSPSolver.ncount, int);
   
   CCdatagroup dat;
+  ROS_INFO("solving ncount: %d", m_TSPSolver.ncount);
   cout<<"=================initialize================="<<endl;
   //Initialize a CCdatagroup
   CCutil_init_datagroup (&dat);
@@ -117,13 +215,13 @@ void FindPositions::solving_tsp_concorde(int flag){
   cout <<m_TSPSolver.ncount<<endl;
   
   if(flag ==1){
-    for (int i = 0; i < m_TSPSolver.ncount; i++) {
+    for (int i = 0; i < m_TSPSolver.ncount-1; i++) {
       int turn= m_TSPSolver.out_tour[i];
-      int x=waypoints[turn][0], y=waypoints[turn][1];
-      array<double, 2> world_position = gridmapToworld(x,y);
-      waypointsWorld.push_back({world_position[0], world_position[1]});
+      //int x=waypoints[turn][0], y=waypoints[turn][1];
+      //array<double, 2> world_position = gridmapToworld(x,y);
+      waypointsWorld.push_back({tsp2nodes[turn][0], tsp2nodes[turn][1]});
       geometry_msgs::Point p;
-      p.x=world_position[0]; p.y=world_position[1]; p.z=0.0;
+      p.x=tsp2nodes[turn][0]; p.y=tsp2nodes[turn][1]; p.z=0.0;
         
       tsp2_points.points.push_back(p);
       t2_line_strip.points.push_back(p);
@@ -201,7 +299,8 @@ void FindPositions::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg){
   this->map_height = m_gridmap.info.height;
   this->gridmap_origin_pose = {m_gridmap.info.origin.position.x, m_gridmap.info.origin.position.y};
   m_mapAvailable = 1;
-    
+  //startpose ej
+  //m_sposeAvailable=1;
   ROS_INFO("%lf Got map %d, %d, size: %lu", map_resolution, map_width, map_height, origin_map.size());
   
   for(int i=0; i<origin_map.size();i++){
@@ -288,7 +387,7 @@ void FindPositions::makeMapForPath(){
 }
 
 double FindPositions::calculatePath(double ax, double ay, double bx, double by,int mode){
- // ROS_INFO("calculate len..");
+  ROS_INFO("calculate len..");
   GlobalPlanningHandler o_gph( *mpo_costmap );
   o_gph.reinitialization();
   
@@ -301,7 +400,7 @@ double FindPositions::calculatePath(double ax, double ay, double bx, double by,i
   goal.header.frame_id = "map" ;
 
   bool bplansuccess = o_gph.makePlan(start, goal, plan);
-      
+  ROS_INFO("plan success: %d", bplansuccess);
   //caclulate path length..//
   if(!bplansuccess){
     ROS_INFO("couldnt find a path..");
@@ -393,19 +492,22 @@ double FindPositions::calculatePath(double ax, double ay, double bx, double by,i
     }
   }
   
-  return path_len+(add_node*2.0);
+  return mode==0? path_len : path_len+(add_node*2.0);
 }
 
-int FindPositions::findFirstNode(){
+int FindPositions::findFirstNode(vector<array<double,2>> nodes){
   ROS_INFO("Function find first node..");
   ROS_INFO("nearby.. %lf %lf", start_pose[0], start_pose[1]);
   int node_idx = -1;
   double nearest_path = DBL_MAX;
-  for(int ch_node=0;ch_node<waypointsWorld.size();ch_node++){
-    double dist_nn = distance(waypointsWorld[ch_node][0], waypointsWorld[ch_node][1], start_pose[0], start_pose[1]);
+  //for(int ch_node=0;ch_node<waypointsWorld.size();ch_node++){
+  for(int ch_node=0;ch_node<nodes.size();ch_node++){
+    //double dist_nn = distance(waypointsWorld[ch_node][0], waypointsWorld[ch_node][1], start_pose[0], start_pose[1]);
+    double dist_nn = distance(nodes[ch_node][0], nodes[ch_node][1], start_pose[0], start_pose[1]);
     if(dist_nn<2.0){
       ROS_INFO("found_node: %d", ch_node);
-      double ch_path = calculatePath(waypointsWorld[ch_node][0], waypointsWorld[ch_node][1], start_pose[0], start_pose[1], 0);
+      //double ch_path = calculatePath(waypointsWorld[ch_node][0], waypointsWorld[ch_node][1], start_pose[0], start_pose[1], 0);
+      double ch_path = calculatePath(nodes[ch_node][0], nodes[ch_node][1], start_pose[0], start_pose[1], 0);
       if(ch_path<nearest_path && ch_path!=0){
       //if(dist_nn<nearest_path){
         nearest_path=dist_nn;
@@ -420,18 +522,20 @@ int FindPositions::findFirstNode(){
 void FindPositions::checkRealPath(){
   ROS_INFO("Function: check real path %lu", waypointsWorld.size());
   
-  makeMapForPath();
+  //makeMapForPath();
   //cut the invalid sequence.
   //change the sequence 
   //i i+1 to i-ch i
   
   //set start
-  int start_node=findFirstNode() + 1;
+  //int start_node=findFirstNode(waypointsWorld) + 1;
+  int start_node=0;
   unsigned long way_size=waypointsWorld.size();
   int ch=1;
   for(int i=0;i<way_size; i++){
-    int cur_i= (start_node+i)%way_size;
-    int pre_i= (cur_i-ch)==-1? way_size-1:cur_i-ch;
+    //int cur_i= (start_node+i)%way_size;
+    int cur_i= (start_node+i+1)%way_size;
+    int pre_i= (cur_i-ch)<0? way_size+(cur_i-ch):cur_i-ch;
     ROS_INFO("path %d to %d..", pre_i, cur_i);
     double path_len = calculatePath(waypointsWorld[pre_i][0], waypointsWorld[pre_i][1]
                                     , waypointsWorld[cur_i][0], waypointsWorld[cur_i][1], 1);
