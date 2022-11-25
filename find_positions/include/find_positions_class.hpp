@@ -198,7 +198,8 @@ public:
     return outPose;
   }
   
-  void writeDataFile (vector<array<int,2>> positions);
+  void writeDataFile (vector<array<int,2>> positions, int mode, int exclude_n);
+  int removeUnreach(vector<array<int,2>> positions);
   ////void solving_tsp_concorde(vector<int> * tour, int flag);
   void solving_tsp_concorde(int flag);
   void padding(int pose, int siz, int ch);
@@ -216,7 +217,7 @@ public:
     return (end - start).toNSec()*1e-6;
   }
   
-  int findFirstNode();
+  int findFirstNode(vector<array<double,2>> nodes);
   void checkRealPath();
   int m_mapAvailable = 0;
   int m_sposeAvailable = 0;
@@ -261,6 +262,8 @@ protected:
   visualization_msgs::Marker m_path_points;
   vector<array<int,2>> middles;
   vector<array<int,2>> waypoints;
+  vector<array<double, 2>> tsp2nodes;
+  vector<vector<int>> path_lens;
   
   nav_msgs::OccupancyGrid m_globalcostmap ;
 	int m_globalcostmap_rows ;
