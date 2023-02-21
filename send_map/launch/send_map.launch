@@ -1,13 +1,12 @@
 <!-- 
+
 -->
 <launch>
   <node pkg="send_map" type="send_map_node" name="send_map" output="screen" >
-        <param name="frame_id" type="string" value="map" />
-        <!--remap from="cmd_vel" to="/former_base_controller/cmd_vel"/>
-        <rosparam command="load" file="$(find slam_toolbox)/config/mapper_params_lifelong.yaml" /-->
-  </node>
-    
-    
+        <!--param name="frame_id" type="string" value="map" />
+        <remap from="cmd_vel" to="/former_base_controller/cmd_vel"/-->
+    </node>
+       
     <!--node name="rviz" pkg="rviz" type="rviz" required="true" args="-d $(arg rviz_config)"/-->
 
 </launch>
