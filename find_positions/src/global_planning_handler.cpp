@@ -1,39 +1,40 @@
 /*********************************************************************
-* Software License Agreement (XXX License)
-*
-*  Copyright (c) 2022, Ewha Graphics Lab
-*  All rights reserved.
-*
-*  Redistribution and use in source and binary forms, with or without
-*  modification, are permitted provided that the following conditions
-*  are met:
-*
-*   * Redistributions of source code must retain the above copyright
-*     notice, this list of conditions and the following disclaimer.
-*   * Redistributions in binary form must reproduce the above
-*     copyright notice, this list of conditions and the following
-*     disclaimer in the documentation and/or other materials provided
-*     with the distribution.
-*   * Neither the name of the Willow Garage nor the names of its
-*     contributors may be used to endorse or promote products derived
-*     from this software without specific prior written permission.
-*
-*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-*  POSSIBILITY OF SUCH DAMAGE.
-*********************************************************************
+Copyright 2022 The Ewha Womans University.
+All Rights Reserved.
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE
+Permission to use, copy, modify OR distribute this software and its
+documentation for educational, research and non-profit purposes, without
+fee, and without a written agreement is hereby granted, provided that the
+above copyright notice and the following three paragraphs appear in all
+copies.
 
- *  Created on: Apr, 2022
- *      Author: Kyungmin Han (hankm@ewha.ac.kr)
+IN NO EVENT SHALL THE EWHA WOMANS UNIVERSITY BE
+LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR
+CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF THE
+USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE EWHA WOMANS UNIVERSITY
+BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+THE EWHA WOMANS UNIVERSITY SPECIFICALLY DISCLAIM ANY
+WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE
+PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND THE EWHA WOMANS UNIVERSITY
+HAS NO OBLIGATIONS TO PROVIDE MAINTENANCE, SUPPORT,
+UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+
+The authors may be contacted via:
+
+
+Mail:        Y. J. Kim, Kyung Min Han
+             Computer Graphics Lab                       
+             Department of Computer Science and Engineering
+             Ewha Womans University
+             11-1 Daehyun-Dong Seodaemun-gu, Seoul, Korea 120-750
+             
+             
+Phone:       +82-2-3277-6798
+
+EMail:       kimy@ewha.ac.kr
+             hankm@ewha.ac.kr
 */
 
 
@@ -43,7 +44,7 @@ namespace find_positions
 {
 
 GlobalPlanningHandler::GlobalPlanningHandler( ):
-robot_base_frame_("base_link"),
+robot_base_frame_("base_link"), // was "base_link"
 global_frame_("map"),
 mb_initialized(false), mb_allow_unknown(true), mb_visualize_potential(false),
 mf_tolerance(0.0),
@@ -53,14 +54,15 @@ mp_cost_translation_table(NULL)
 	mb_initialized = true;
 }
 
-GlobalPlanningHandler::GlobalPlanningHandler( costmap_2d::Costmap2D &ocostmap ):
-robot_base_frame_("base_link"),
-global_frame_("map"),
+GlobalPlanningHandler::GlobalPlanningHandler( costmap_2d::Costmap2D &ocostmap, const std::string& worldframe, const std::string& baseframe  ):
+robot_base_frame_(baseframe), // was "base_link"
+global_frame_(worldframe),
 mb_initialized(false), mb_allow_unknown(true), mb_visualize_potential(false),
 mf_tolerance(0.0),
 mp_cost_translation_table(NULL)
 {
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
+	//ROS_INFO(" gph initilized with (world frame: %s) and (base frame: %s) \n", global_frame_.c_str(), robot_base_frame_.c_str() );
 
 	m_costmap = costmap_2d::Costmap2D(ocostmap) ;
 	planner_ = boost::shared_ptr<navfn::NavFn>( new navfn::NavFn(0, 0));
@@ -122,10 +124,10 @@ void GlobalPlanningHandler::reinitialization(  )
 {
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
 
-	robot_base_frame_ = string("base_link");
-	global_frame_ = string("map");
+//	robot_base_frame_ = string("base_link");
+//	global_frame_ = string("map");
 //	mb_initialized = false;
-	mb_allow_unknown = true;
+	mb_allow_unknown = false;
 	mb_visualize_potential = false;
 	mf_tolerance = 0.0;
 
@@ -165,7 +167,7 @@ void GlobalPlanningHandler::reinitialization(  )
 //  return false;
 //}
 
-double GlobalPlanningHandler::getPointPotential(const geometry_msgs::Point& world_point)
+float GlobalPlanningHandler::getPointPotential(const geometry_msgs::Point& world_point)
 {
   if(!mb_initialized){
     //ROS_ERROR("GPH has not been initialized yet, but it is being used, please call initialize() before use");
@@ -238,7 +240,7 @@ bool GlobalPlanningHandler::makePlan( const geometry_msgs::PoseStamped start, co
 //    boost::mutex::scoped_lock lock(m_mutex);
     if(!mb_initialized)
     {
-      //ROS_ERROR("@GPH: This planner has not been initialized yet, but it is being used, please call initialize() before use");
+      //ROS_WARN("@GPH: This planner has not been initialized yet, but it is being used, please call initialize() before use");
       return false;
     }
 ROS_WARN("GlobalPlanningHandler::makePlan() is called to find a plan from (%f %f) to the goal (%f %f) \n",
@@ -251,15 +253,15 @@ ROS_WARN("GlobalPlanningHandler::makePlan() is called to find a plan from (%f %f
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
     if(goal.header.frame_id != global_frame_)
     {
-      //ROS_ERROR("@GPH: The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.",
-      //          global_frame_.c_str(), goal.header.frame_id.c_str());
+      ROS_WARN("@GPH: The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.",
+                global_frame_.c_str(), goal.header.frame_id.c_str());
       return false;
     }
 
     if(start.header.frame_id != global_frame_)
     {
-      //ROS_ERROR("@GPH: The start pose passed to this planner must be in the %s frame.  It is instead in the %s frame.",
-      //          global_frame_.c_str(), start.header.frame_id.c_str());
+      ROS_WARN("@GPH: The start pose passed to this planner must be in the %s frame.  It is instead in the %s frame.",
+                global_frame_.c_str(), start.header.frame_id.c_str());
       return false;
     }
 
@@ -269,7 +271,7 @@ ROS_WARN("GlobalPlanningHandler::makePlan() is called to find a plan from (%f %f
     unsigned int mx, my;
     if(!m_costmap.worldToMap(wx, wy, mx, my))
     {
-      //ROS_WARN("The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
+      ROS_WARN("The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
       return false;
     }
 
@@ -280,9 +282,7 @@ ROS_WARN("GlobalPlanningHandler::makePlan() is called to find a plan from (%f %f
 //ROS_INFO("setting planner nav arr w/ cellsizes: %d %d\n",mp_costmap->getSizeInCellsX(), mp_costmap->getSizeInCellsY());
     planner_->setNavArr(m_costmap.getSizeInCellsX(), m_costmap.getSizeInCellsY());
 //ROS_INFO("setting planner costmap \n");
-    
-    planner_->setEqGridCostmap(m_costmap.getCharMap(), mb_allow_unknown);
-    //planner_->setCostmap(m_costmap.getCharMap(), true, mb_allow_unknown);
+    planner_->setCostmap(m_costmap.getCharMap(), true, mb_allow_unknown);
 //costmap_->saveMap("/home/hankm/catkin_ws/src/frontier_detector/launch/cstmap.dat");
 
     int map_start[2];
@@ -296,7 +296,7 @@ ROS_WARN("GlobalPlanningHandler::makePlan() is called to find a plan from (%f %f
     {
       if(mf_tolerance <= 0.0)
       {
-        //ROS_WARN_THROTTLE(1.0, "The goal sent to the global_planning_handler is off the global costmap. Planning will always fail to this goal.");
+        ROS_WARN_THROTTLE(1.0, "The goal sent to the global_planning_handler is off the global costmap. Planning will always fail to this goal.");
         return false;
       }
       mx = 0;
@@ -348,98 +348,13 @@ ROS_WARN("GlobalPlanningHandler::makePlan() is called to find a plan from (%f %f
     }
     else
     {
-    	//ROS_ERROR("@GPH: Failed to get a plan from the Astar search");
+    	ROS_ERROR("@GPH: Failed to get a plan from the Astar search");
     	return false;
     }
 
-
-//    double resolution = mp_costmap->getResolution();
-//    geometry_msgs::PoseStamped p, best_pose;
-//    p = goal;
-//
-//    bool found_legal = false;
-//    double best_sdist = DBL_MAX;
-//
-//    p.pose.position.y = goal.pose.position.y - mf_tolerance;
-//
-//    while(p.pose.position.y <= goal.pose.position.y + mf_tolerance)
-//    {
-//      p.pose.position.x = goal.pose.position.x - mf_tolerance;
-//      while(p.pose.position.x <= goal.pose.position.x + mf_tolerance)
-//      {
-//        double potential = getPointPotential(p.pose.position);
-//        double sdist = sq_distance(p, goal);
-//        if(potential < POT_HIGH && sdist < best_sdist)
-//        {
-//          best_sdist = sdist;
-//          best_pose = p;
-//          found_legal = true;
-//        }
-//        p.pose.position.x += resolution;
-//      }
-//      p.pose.position.y += resolution;
-//    }
-//
-//    if(found_legal)
-//    {
-//      //extract the plan
-//      if(getPlanFromPotential(best_pose, plan))
-//      {
-//        //make sure the goal we push on has the same timestamp as the rest of the plan
-//        geometry_msgs::PoseStamped goal_copy = best_pose;
-//        goal_copy.header.stamp = ros::Time::now();
-//        plan.push_back(goal_copy);
-//
-//        ROS_INFO("GPH has found a legal plan with %d length \n", plan.size() );
-//
-//      }
-//      else
-//      {
-//        ROS_ERROR("@GPH: Failed to get a plan from potential when a legal potential was found. This shouldn't happen.");
-//      }
-//    }
-
-
-//    if (mb_visualize_potential)
-//    {
-//      // Publish the potentials as a PointCloud2
-//      sensor_msgs::PointCloud2 cloud;
-//      cloud.width = 0;
-//      cloud.height = 0;
-//      cloud.header.stamp = ros::Time::now();
-//      cloud.header.frame_id = global_frame_;
-//      sensor_msgs::PointCloud2Modifier cloud_mod(cloud);
-//      cloud_mod.setPointCloud2Fields(4, "x", 1, sensor_msgs::PointField::FLOAT32,
-//                                        "y", 1, sensor_msgs::PointField::FLOAT32,
-//                                        "z", 1, sensor_msgs::PointField::FLOAT32,
-//                                        "pot", 1, sensor_msgs::PointField::FLOAT32);
-//      cloud_mod.resize(planner_->ny * planner_->nx);
-//      sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
-//
-//      PotarrPoint pt;
-//      float *pp = planner_->potarr;
-//      double pot_x, pot_y;
-//      for (unsigned int i = 0; i < (unsigned int)planner_->ny*planner_->nx ; i++)
-//      {
-//        if (pp[i] < 10e7)
-//        {
-//          mapToWorld(i%planner_->nx, i/planner_->nx, pot_x, pot_y);
-//          iter_x[0] = pot_x;
-//          iter_x[1] = pot_y;
-//          iter_x[2] = pp[i]/pp[planner_->start[1]*planner_->nx + planner_->start[0]]*20;
-//          iter_x[3] = pp[i];
-//          ++iter_x;
-//        }
-//      }
-//      potarr_pub_.publish(cloud);
-//    }
-//ROS_WARN("Astar was successful (%d) found a legal plan: (%d) is plan empty: (%d)\n", success, found_legal, plan.empty() );
-
-    //return !plan.empty();
 }
 
-//ej_makeplan
-bool GlobalPlanningHandler::makePlan( const int& tid, const float& fbound, const bool& boneqgrid,
+int GlobalPlanningHandler::makePlan( const int& tid, const float& fbound, const bool& boneqgrid,
 			  const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
 		  	  std::vector<geometry_msgs::PoseStamped>& plan, float& fendpotential )
 {
@@ -449,7 +364,7 @@ bool GlobalPlanningHandler::makePlan( const int& tid, const float& fbound, const
     if(!mb_initialized)
     {
       ROS_ERROR("@GPH: This planner has not been initialized yet, but it is being used, please call initialize() before use");
-      return false;
+      return 0;
     }
 
 //ROS_WARN("GlobalPlanningHandler::makePlan() is called to find a plan from (%f %f) to the goal (%f %f) \n",
@@ -457,21 +372,19 @@ bool GlobalPlanningHandler::makePlan( const int& tid, const float& fbound, const
     //clear the plan, just in case
     plan.clear();
 
-    ros::NodeHandle n;
-
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
     if(goal.header.frame_id != global_frame_)
     {
       ROS_ERROR("@GPH: The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.",
                 global_frame_.c_str(), goal.header.frame_id.c_str());
-      return false;
+      return 0;
     }
 
     if(start.header.frame_id != global_frame_)
     {
       ROS_ERROR("@GPH: The start pose passed to this planner must be in the %s frame.  It is instead in the %s frame.",
                 global_frame_.c_str(), start.header.frame_id.c_str());
-      return false;
+      return 0;
     }
 
     double wx = start.pose.position.x;
@@ -481,7 +394,7 @@ bool GlobalPlanningHandler::makePlan( const int& tid, const float& fbound, const
     if(!m_costmap.worldToMap(wx, wy, mx, my))
     {
       ROS_WARN("The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
-      return false;
+      return 0;
     }
 
     //clear the starting cell within the costmap because we know it can't be an obstacle
@@ -513,7 +426,7 @@ ROS_DEBUG("[tid %d] setting planner nav arr w/ cellsizes: %d %d\n",m_costmap.get
       if(mf_tolerance <= 0.0)
       {
        // ROS_WARN_THROTTLE(1.0, "The goal sent to the global_planning_handler is off the global costmap. Planning will always fail to this goal.");
-        return false;
+        return 0;
       }
       mx = 0;
       my = 0;
@@ -531,9 +444,12 @@ ROS_DEBUG("[tid %d] setting planner nav arr w/ cellsizes: %d %d\n",m_costmap.get
     //bool success = planner_->calcNavFnAstar(   );
     //bool success = planner_->calcNavFnDijkstra(true);
 
-    bool success = planner_->calcNavFnBoundedAstar( tid, fbound, fendpotential );
-    if(!success)
-    	return false;
+    // -1 : currnode > upperbound
+    // 1 : last node is open
+    // -3: last node is open but invalid plan
+    int success = planner_->calcNavFnBoundedAstar( tid, fbound, fendpotential ); // -3, -1, 1
+    if(success < 0)
+    	return success;
 
 	double resolution = m_costmap.getResolution();
 	geometry_msgs::PoseStamped p, best_pose;
@@ -572,53 +488,28 @@ ROS_DEBUG("[tid %d] setting planner nav arr w/ cellsizes: %d %d\n",m_costmap.get
 		goal_copy.header.stamp = ros::Time::now();
 		plan.push_back(goal_copy);
 
+		planner_->writeAstarPlan(plan);
+
 		//ROS_INFO("GPH has found a legal plan with %d length \n", plan.size() );
-		return !plan.empty();
+		if(fendpotential < fbound )
+		{
+			return 2; //!plan.empty();
+		}
+		else
+		{
+			return 1;
+		}
 	  }
 	  else
 	  {
 		//ROS_ERROR("@GPH: Failed to get a plan from potential when a legal potential was found. This shouldn't happen.");
-		return false;
+		return -6;
 	  }
 	}
-
-//    if(success)
-//    {
-//		//planner_->calcPath(mp_costmap->getSizeInCellsX() * 4);
-//
-//		//extract the plan
-//		float *x = planner_->getPathX();
-//		float *y = planner_->getPathY();
-//		int len = planner_->getPathLen();
-//		ros::Time plan_time = ros::Time::now();
-//
-//		for(int i = len - 1; i >= 0; --i)
-//		{
-//		  //convert the plan to world coordinates
-//		  double world_x, world_y;
-//		  mapToWorld(x[i], y[i], world_x, world_y);
-//
-//		  geometry_msgs::PoseStamped pose;
-//		  pose.header.stamp = plan_time;
-//		  pose.header.frame_id = global_frame_;
-//		  pose.pose.position.x = world_x;
-//		  pose.pose.position.y = world_y;
-//		  pose.pose.position.z = 0.0;
-//		  pose.pose.orientation.x = 0.0;
-//		  pose.pose.orientation.y = 0.0;
-//		  pose.pose.orientation.z = 0.0;
-//		  pose.pose.orientation.w = 1.0;
-//		  plan.push_back(pose);
-//		}
-//
-//		ROS_INFO("GPH has found a legal plan with %d length \n", plan.size() );
-//		return true;
-//    }
-//    else
-//    {
-//    	ROS_ERROR("@GPH: Failed to get a plan from the Astar search");
-//    	return false;
-//    }
+	else
+	{
+		return -7;
+	}
 
 }
 

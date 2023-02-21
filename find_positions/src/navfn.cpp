@@ -184,17 +184,6 @@ namespace navfn {
       start[1] = g[1];
       ROS_DEBUG("[NavFn] Setting start to %d,%d\n", start[0], start[1]);
 
-      // reset cost arround the goal (by hkm)
-//      COSTTYPE *cm = costarr;
-//      cm[ g[0] + g[1]*nx ] = 0 ;
-//
-//      for(int r=-2; r < 2; r++)
-//      {
-//    	  for(int c=-2; c < 2; c++)
-//    	  {
-//    		  cm[ g[0] + c + (g[1] + r)*nx ] = 0 ;
-//    	  }
-//      }
     }
 
   //
@@ -229,6 +218,8 @@ namespace navfn {
       memset(pending, 0, ns*sizeof(bool));
       gradx = new float[ns];
       grady = new float[ns];
+
+      mf_minpot = POT_HIGH;
     }
 
   //
@@ -238,6 +229,9 @@ namespace navfn {
   void
     NavFn::setCostmap(const COSTTYPE *cmap, bool isROS, bool allow_unknown)
     {
+    //std::ofstream ofile;
+	  //ofile.open("/home/ej/test.txt");
+	  //ROS_INFO("find_positions file open?: %d", ofile.is_open());
       COSTTYPE *cm = costarr;
       if (isROS)			// ROS-type cost array (true)
       {
@@ -252,7 +246,7 @@ namespace navfn {
             // values in range 0 to 252 -> values from COST_NEUTRAL to COST_OBS_ROS.
             *cm = COST_OBS;
             int v = *cmap;
-            if (v < COST_OBS_ROS)
+            if (v < COST_OBS_ROS-2) // 251 ~ 253 --> OBS  by hkm
             {
               v = COST_NEUTRAL+COST_FACTOR*v;
               if (v >= COST_OBS)
@@ -261,9 +255,12 @@ namespace navfn {
             }
             else if(v == COST_UNKNOWN_ROS && allow_unknown)
             {
-				v = COST_OBS-1;
-				*cm = v;
-			}
+              v = COST_NEUTRAL; //COST_OBS-1;
+              *cm = v;
+            }
+            //if (ofile.is_open()) {
+            //  ofile <<static_cast<unsigned>(*cm) << ", ";
+            //}
           }
         }
       }
@@ -279,7 +276,7 @@ namespace navfn {
             if (i<7 || i > ny-8 || j<7 || j > nx-8)
               continue;	// don't do borders
             int v = *cmap;
-            if (v < COST_OBS_ROS)
+            if (v < COST_OBS_ROS - 2)
             {
               v = COST_NEUTRAL+COST_FACTOR*v;
               if (v >= COST_OBS)
@@ -288,7 +285,7 @@ namespace navfn {
             }
             else if(v == COST_UNKNOWN_ROS)
             {
-              v = COST_OBS-1;
+              v = COST_NEUTRAL; //COST_OBS-1;
               *cm = v;
             }
           }
@@ -296,15 +293,12 @@ namespace navfn {
 
       }
     }
-    
 
   void
     NavFn::setEqGridCostmap(const COSTTYPE *cmap, bool allow_unknown)
     {
-      std::ofstream ofile;
-	  ofile.open("/home/ej/test.txt");
-	  //ROS_INFO("file open?: %d", ofile.is_open());
-      //vector<static_cast<unsigned>> map_check;
+      
+
 	  COSTTYPE *cm = costarr;
 		for (int i=0; i<ny; i++)
 		{
@@ -317,22 +311,16 @@ namespace navfn {
 			// values in range 0 to 252 -> values from COST_NEUTRAL to COST_OBS_ROS.
 			*cm = COST_OBS;
 			int v = *cmap;
-			if (v < 66)// COST_OBS_ROS-2 ) // 251 ~ 254  ==> OBS
-			{//66
+			if (v < COST_OBS_ROS - 2 ) // 251 ~ 254  ==> OBS
+			{
 			  *cm = 50;
 			}
 			else if(v == COST_UNKNOWN_ROS && allow_unknown)
 			{
 			  *cm = 50;
 			}
-			
-			if (ofile.is_open()) {
-				ofile <<static_cast<unsigned>(*cm) << ", ";
-			}
 		  }
 		}
-		
-		ofile.close();
     }
 
 
@@ -368,8 +356,8 @@ namespace navfn {
   bool
     NavFn::calcNavFnAstar()
     {
-//mofs_astarlog = std::ofstream("/home/hankm/results/autoexploration/astarlog.txt");
-//mofs_astarlog << start[0] << " " << start[1] << " " << goal[0] << " " << goal[1] << " "
+////mofs_astarlog = std::ofstream("/home/hankm/results/autoexploration/astarlog.txt");
+////mofs_astarlog << start[0] << " " << start[1] << " " << goal[0] << " " << goal[1] << " "
 //			  << nx << " " << ny << " " << ns << std::endl;
 
       setupNavFn(true);
@@ -393,24 +381,25 @@ namespace navfn {
       }
     }
 
-  bool
+  int
     NavFn::calcNavFnBoundedAstar( const int& tid, const float& fupperbound, float& fendpot )
     {
 
 	  mf_bound = fupperbound ;
       setupNavFn(true);
 
-//mofs_astarlog = std::ofstream("/home/hankm/results/autoexploration/astar_log.txt");
-//mofs_astarlog << start[0] << " " << start[1] << " " << goal[0] << " " << goal[1] << std::endl;
+      //mofs_astarlog << start[0] << " " << start[1] << " " << goal[0] << " " << goal[1] << std::endl;
 
 //ROS_DEBUG("[tid %d] propagating Astar from (%f %f) to (%f %f)\n", tid, start[0], start[1], goal[0], goal[1]);
 
       // calculate the nav fn and path
-	  bool bsuccess = propNavFnBoundedAstar(tid, nx*ny, fupperbound, fendpot);
-	  if(!bsuccess)
+      // -1 : currnode > upperbound
+      // 1  : lastnode is open
+	  int bsuccess = propNavFnBoundedAstar(tid, nx*ny, fupperbound, fendpot);  // -1 or 1
+	  if( bsuccess < 0)
 	  {
 		  //ROS_ERROR("[tid: %d][NavFn Astar] aborting this search \n", tid);
-		  return false;
+		  return bsuccess;
 	  }
       // path
       int len = calcPath(nx*4);
@@ -418,12 +407,12 @@ namespace navfn {
       if (len > 0)			// found plan
       {
        // ROS_WARN("[tid: %d][NavFn Astar] Path found, %d steps\n", len, tid);
-        return true;
+        return bsuccess;
       }
       else
       {
         //ROS_ERROR("[tid: %d][NavFn Astar] No path found\n", tid);
-        return false;
+        return -3;
       }
     }
 
@@ -458,7 +447,7 @@ namespace navfn {
       for (int i=0; i<ns; i++)
       {
         potarr[i] = POT_HIGH;
-        if (!keepit) costarr[i] = COST_NEUTRAL;
+        if (!keepit) costarr[i] = COST_NEUTRAL; // ignored since this arr is false
         gradx[i] = grady[i] = 0.0;
       }
 
@@ -488,7 +477,7 @@ namespace navfn {
       memset(pending, 0, ns*sizeof(bool));
 
       // set goal
-      int k = goal[0] + goal[1]*nx;
+      int k = goal[0] + goal[1]*nx; // <--- be careful!!  goal is set to "robot pose (start)"
       initCost(k,0);
 
       // find # of obstacle cells
@@ -612,7 +601,7 @@ namespace navfn {
 #define INVSQRT2 0.707106781
 
   inline void
-    NavFn::updateCellAstar(int n, float& fminpot) // fminpot is the pot of the lowest neighbor
+    NavFn::updateCellAstar(int n, float& fcurminpot) // fminpot is the pot of the lowest neighbor
     {
       // get neighbors
       float p_u,p_d,p_l,p_r;
@@ -624,8 +613,8 @@ namespace navfn {
       //	 potarr[n], l, r, u, d);
       // ROS_INFO("[Update] cost of %d: %d\n", n, costarr[n]);
 
-//mofs_astarlog << "[update potarray] " << potarr[n] << " " << p_l << " " << p_r << " " << p_u << " " << p_d << std::endl;
-//mofs_astarlog << "[update cost] " << static_cast<uint32_t>(costarr[n]) << std::endl;
+//mofs_astarlog << "update potarray @" << " n " << potarr[n] << " " << p_l << " " << p_r << " " << p_u << " " << p_d << std::endl;
+//mofs_astarlog << "update cost @" << " n " << static_cast<uint32_t>(costarr[n]) << std::endl;
 
       // find lowest, and its lowest neighbor
       float ta, tc;
@@ -636,8 +625,8 @@ namespace navfn {
       if (costarr[n] < COST_OBS)	// don't propagate into obstacles
       {
         float hf = (float)costarr[n]; // traversability factor
-        float dc = tc-ta;		// relative cost between ta,tc
-        if (dc < 0) 		// ta is lowest ( if tc is lowest. so we set ta = tc)
+        float dc = tc-ta;	// we assume that p_u is the lowest (relative cost between ta,tc)
+        if (dc < 0) 		// in this case, p_l is the lowest
         {
           dc = -dc;
           ta = tc;
@@ -646,7 +635,7 @@ namespace navfn {
         // calculate new potential
         float pot;
         if (dc >= hf)		// if too large, use ta-only update
-          pot = ta+hf;
+          pot = ta+hf;		// pot = p_u + 50
         else			// two-neighbor interpolation update
         {
           // use quadratic approximation
@@ -659,8 +648,10 @@ namespace navfn {
 
         //ROS_INFO("[Update] new pot: %d\n", costarr[n]);
 //mofs_astarlog << "ta, dc, hf: " << ta << " " << dc << " " << hf << std::endl;
-//mofs_astarlog << "[update] new pot (ta + hf, or ta + hf*v): " << pot << " potarr[n]: " << potarr[n] << std::endl;
+//mofs_astarlog << "[update] new pot (ta + hf, or ta + hf*v): " << pot << " potarr[" << n << "]: " << potarr[n] << std::endl;
         // now add affected neighbors to priority blocks
+
+
         if (pot < potarr[n])
         {
           float c_le = INVSQRT2*(float)costarr[n-1];
@@ -676,8 +667,9 @@ namespace navfn {
           potarr[n] = pot;
           pot += dist;
 
-          fminpot = pot ;
-//mofs_astarlog << "[update] pot + dist (f) : " << pot << " curT: " << curT << std::endl;
+          fcurminpot = pot ;
+////mofs_astarlog << "[update] pot + dist (f) : " << pot << " curT: " << curT << std::endl;
+  //mofs_astarlog << "[update] fcurminpot = " << fcurminpot << " curT: " << curT << std::endl;
           if (pot < curT)	// low-cost buffer block 
           {
             if (p_l > pot+c_le) push_next(n-1);
@@ -693,13 +685,19 @@ namespace navfn {
             if (p_d > pot+c_de) push_over(n+nx);
           }
         }
-        else if( pot > potarr[n] )// by kmhan
-        {
-//mofs_astarlog << "pot > potarr[n] case " << pot << " " <<  potarr[n] << std::endl;
-        }
-
+//        else if( pot > potarr[n] )// by kmhan
+//        {
+////mofs_astarlog << "pot > potarr[n] case !!!! " << pot << " " <<  potarr[n] << std::endl;
+//        }
+//        else
+//        {
+////mofs_astarlog << pot << " == " << potarr[n]  << " fcurminpot = " << fcurminpot << endl;
+//        }
       }
-
+//      else
+//      {
+////mofs_astarlog << " cannot propagate into OBS   cost: " << costarr[n] << endl;
+//      }
     }
 
 
@@ -825,7 +823,7 @@ namespace navfn {
         pb = curP; 
         i = curPe;
 
-        float fcurrpot = POT_HIGH;
+        float fcurrpot = POT_HIGH; //potarr[*curP];
         float fminpot  = POT_HIGH;
         while (i-- > 0)
         {
@@ -873,7 +871,7 @@ namespace navfn {
 
 
 
-  bool
+  int
     NavFn::propNavFnBoundedAstar(const int& tid, int cycles, const float fboundpot, float& fcurrnodepot)
     {
       int nwv = 0;			// max priority block size
@@ -887,7 +885,12 @@ namespace navfn {
       // set up start cell
       int startCell = start[1]*nx + start[0];
 
+      int status = 0;
+      float fcurpot = potarr[*curP];
+      mf_minpot = potarr[*curP];
+
       // do main cycle
+
       for (; cycle < cycles; cycle++) // go for this many cycles, unless interrupted
       {
         //
@@ -908,24 +911,19 @@ namespace navfn {
         // process current priority buffer
         pb = curP;
         i = curPe;
-        float fcurpot = POT_HIGH;
-        float fminpot = POT_HIGH;
+        float fcurpot = mf_minpot;
+
         while (i-- > 0)
         {
           updateCellAstar(*pb++, fcurpot);
-          if( fcurpot < fminpot )
-        	  fminpot = fcurpot;
         }
-//mofs_astarlog << "[tid: "<< tid << "] min pot of open nodes/bound: " << fminpot << "/" << fboundpot << std::endl;
-//ROS_INFO("[tid:%d] minpot: %f bound: %f\t",tid, fminpot, fboundpot);
 
 		// B&B evaluation
-		fcurrnodepot = fminpot ;
+		fcurrnodepot = fcurpot ;
 
-		if( fcurrnodepot > fboundpot + COST_NEUTRAL )
+		if( fcurrnodepot > fboundpot ) //+ COST_NEUTRAL )
 		{
-//mofs_astarlog << "aborting condition detected " << std::endl;
-//ROS_INFO("[tid:%d] thread detected that the pot of currnode (%f) > bound (%f)\n", tid, fcurrnodepot, fboundpot);
+			status = -1;
 			break;
 		}
 
@@ -952,24 +950,16 @@ namespace navfn {
 
         // check if we've hit the Start cell
         if (potarr[startCell] < POT_HIGH)
+        {
+        	status = 1;
           break;
-
+        }
       }
-//std::ofstream ofs_potarray("/home/hankm/results/autoexploration/potarray.txt");
-//for(int idx=0; idx < ns; idx++)
-//{
-//	ofs_potarray << potarr[idx] << " ";
-//}
-//ofs_potarray.close();
 
       last_path_cost_ = potarr[startCell];
-//mofs_astarlog << "last_path_cost: " << potarr[startCell] << std::endl;
 
-    //  ROS_DEBUG("[NavFn] Used %d cycles, %d cells visited (%d%%), priority buf max %d\n",
-    //      cycle,nc,(int)((nc*100.0)/(ns-nobs)),nwv);
-
-      if (potarr[startCell] < POT_HIGH) return true; // finished up here
-      else return false;
+      if (potarr[startCell] < POT_HIGH){status = 1; return status;} // finished up here
+      else{ return status;};
     }
 
 
