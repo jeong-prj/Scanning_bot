@@ -38,6 +38,8 @@
 #include <nav_fn/potarr_point.h>
 #include "global_planning_handler.hpp"
 
+#include "tf/transform_listener.h"
+
 extern "C" {
 #include <concorde.h>
 }
@@ -211,7 +213,7 @@ public:
   
   //int eraseInvalidByDist();
   //int bfs(int node_size, vector<int>* graph, vector<int>& sequence);
-  void makeMapForPath();
+  void makeMapForPath(int mode);
   double calculatePath(double ax, double ay, double bx, double by, int mode);
   double takeATime(ros::WallTime start, ros::WallTime end){
     return (end - start).toNSec()*1e-6;
@@ -252,9 +254,12 @@ protected:
   
   vector<signed char> origin_map;
   vector<signed char> map_flags;
+  vector<signed char> map_for_add;
   vector<signed char> map_for_path;
   
   vector<array<double,2>> waypointsWorld;
+  vector<array<double,2>> open_loop;
+  vector<array<double,2>> closed_loop;
   //ej_marker
   visualization_msgs::Marker add_points;
   visualization_msgs::Marker tsp1_points, tsp2_points;

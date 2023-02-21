@@ -25,15 +25,15 @@ int main(int argc, char **argv){
   
   m_fp.tsp1Time = m_fp.takeATime(m_fp.tsp1StartTime, m_fp.tsp1EndTime);
   
-  ROS_INFO("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n First tsp time: %lf (ms)\n ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n", m_fp.tsp1Time);
+  ROS_INFO("++++++++++++++++++++++++++++\n First tsp time: %lf (ms)\n ++++++++++++++++++++++++++++\n", m_fp.tsp1Time);
   
   m_fp.tsp2StartTime = ros::WallTime::now();
-  m_fp.solving_tsp_concorde(1);//30sec
+  int start_node = m_fp.solving_tsp_concorde(1);//30sec
   m_fp.tsp2EndTime = ros::WallTime::now();
   
   m_fp.tsp2Time = m_fp.takeATime(m_fp.tsp2StartTime, m_fp.tsp2EndTime);
   
-  ROS_INFO("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n Second tsp time: %lf (ms)\n ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n", m_fp.tsp2Time);
+  ROS_INFO("++++++++++++++++++++++++++++\n Second tsp time: %lf (ms)\n ++++++++++++++++++++++++++++\n", m_fp.tsp2Time);
 
   clock_t start_0=clock();
   while((clock()-start_0)/CLOCKS_PER_SEC <= 10) ;//10sec
@@ -42,7 +42,8 @@ int main(int argc, char **argv){
   for(int i = 0; i < m_fp.result_waypoints.size(); i++){
     ROS_INFO("Send goal %d", i+1);
     //cout<<"node_waypoints: "<<m_fp.result_waypoints[i][0]<<", " <<m_fp.result_waypoints[i][1]<<endl;
-    double x=m_fp.result_waypoints[i][0], y=m_fp.result_waypoints[i][1];
+    int goal_node = i + start_node < m_fp.result_waypoints.size() ? i+start_node: i+start_node-m_fp.result_waypoints.size();
+    double x=m_fp.result_waypoints[goal_node][0], y=m_fp.result_waypoints[goal_node][1];
     
     move_base_msgs::MoveBaseGoal waypoint_goal;
     waypoint_goal.target_pose.header.frame_id = "map";
@@ -66,7 +67,7 @@ int main(int argc, char **argv){
       //32 is the best time. I think,,
       //ros::Duration(32).sleep();
       clock_t start_2=clock();
-      while((clock()-start_2)/CLOCKS_PER_SEC <= 35) ;
+      while((clock()-start_2)/CLOCKS_PER_SEC <= 30) ;
     }
     else{
       ROS_INFO("The robot failed to reach the goal location for some reason");
@@ -77,14 +78,14 @@ int main(int argc, char **argv){
   
   m_fp.scanningTime = m_fp.takeATime(m_fp.scanningStartTime, m_fp.scanningEndTime);
   
-  ROS_INFO("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n Scanning time: %lf (ms)\n ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n", m_fp.scanningTime);
+  ROS_INFO("++++++++++++++++++++++++++++\n Scanning time: %lf (ms)\n ++++++++++++++++++++++++++++\n", m_fp.scanningTime);
   
   m_fp.totalEndTime = ros::WallTime::now();
   m_fp.totalTime = m_fp.takeATime(m_fp.totalStartTime, m_fp.totalEndTime);
   
   //Print the waypoints on the map
   ROS_INFO("done find_positions_node");
-  ROS_INFO("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n total time: %lf ms \n tsp1 time: %lf ms\n tsp2 time: %lf ms\n scanning time: %lf ms\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++", m_fp.totalTime, m_fp.tsp1Time, m_fp.tsp2Time, m_fp.scanningTime);
+  ROS_INFO("++++++++++++++++++++++++++++\n total time: %lf ms \n tsp1 time: %lf ms\n tsp2 time: %lf ms\n scanning time: %lf ms\n++++++++++++++++++++++++++++", m_fp.totalTime, m_fp.tsp1Time, m_fp.tsp2Time, m_fp.scanningTime);
   
   return 0;
 }
